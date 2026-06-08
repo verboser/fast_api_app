@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: taskdb
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    deploy:
+      restart_policy:
+        condition: any
+
+  web:
+    image: my-fastapi-app:latest
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:rootpassword@db:3306/taskdb
+    depends_on:
+      - db
+    restart: always
+    deploy:
+      restart_policy:
+        condition: any
+
+  frontend:
+    image: my-streamlit-frontend:latest
+    build:
+      context: ./frontend
+    ports:
+      - "8501:8501"
+    depends_on:
+      - web
+    restart: always
+    deploy:
+      restart_policy:
+        condition: any
+
+volumes:
+  db_data:

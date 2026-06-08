@@ -2,7 +2,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import String
 from datetime import datetime, timedelta
 
-# Создаём базу и колонки для бд
 class Base(DeclarativeBase):
     pass
 
@@ -25,18 +24,8 @@ from fastapi import FastAPI
 from sqlalchemy import create_engine
 import os
 
-
-# engine = create_engine(
-#     "sqlite:///./tasks.db",
-#     connect_args={"check_same_thread": False}
-# )
-
-
-# Создаём движок и жизненный цикл для бд
-# Получаем URL из переменной окружения, если ее нет — используем SQLite как запасной вариант для локальных тестов
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tasks.db")
 
-# Для MySQL check_same_thread не нужен
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
@@ -59,7 +48,6 @@ app = FastAPI(lifespan=lifespan)
 #%%
 from sqlalchemy.orm import sessionmaker
 
-# Получаем базу данных
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():
@@ -72,7 +60,6 @@ def get_db():
 #%%
 from pydantic import BaseModel
 
-# Создаём задачу и определяем как будем возвращать её пользователю
 class TaskCreate(BaseModel):
     title: str
     descr: str | None
@@ -105,7 +92,6 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255))
 
 
-# Это всё делаем для того, чтобы не дат паролю просочиться в ответ сервера
 class UserBase(BaseModel):
     login: str
 
@@ -117,8 +103,6 @@ class UserCreate(UserBase):
 class UserOut(UserBase):
     id: int
 
-
-# Делаем релаьное хеширование, потому что это прикольно :)
 password_hash = PasswordHash.recommended()
 
 def get_hashed_pwd(password: str) -> str:
@@ -156,12 +140,10 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# Указывает FastAPI, где искать токен (в заголовке Authorization: Bearer <token>)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
-        # Расшифровываем токен
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGO])
         user_id: str = payload.get("sub")
         if user_id is None:
@@ -176,8 +158,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 #%%
 from sqlalchemy import or_
-
-# Пишем эндпоинты
 
 @app.post("/tasks/", response_model=TaskOut)
 def create_task(task: TaskCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -199,8 +179,6 @@ def get_all_tasks(sort_by: str | None = None,
     query = db.query(Task).filter(Task.owner_id == current_user.id)
     if search is not None:
         query = query.filter(or_(Task.title.contains(search), Task.descr.contains(search)))
-
-    # В реальности, скорее всего полбзователь будет делать сортировку через dropdown menu, так что это чисто заглушка
     if sort_by == "title":
         query = query.order_by(Task.title)
     elif sort_by == "status":
@@ -250,4 +228,4 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
 
     db.delete(d_task)
     db.commit()
-    return {"details": "Task deleted"} # Заглушка, чтобы не было пустоты при успешном удалении (как в Линуксе :)
+    return {"details": "Task deleted"}

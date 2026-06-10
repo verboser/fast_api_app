@@ -29,7 +29,10 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tasks.db")
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(DATABASE_URL,
+                           pool_pre_ping=True,
+                           pool_recycle=3600
+                           )
 
 
 @asynccontextmanager
@@ -229,3 +232,10 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
     db.delete(d_task)
     db.commit()
     return {"details": "Task deleted"}
+
+
+import os
+
+@app.get("/crash")
+def crash_test():
+    os._exit(1)

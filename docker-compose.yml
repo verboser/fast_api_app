@@ -8,7 +8,7 @@ services:
       MYSQL_DATABASE: taskdb
     volumes:
       - db_data:/var/lib/mysql
-    restart: always
+    restart: unless-stopped
     deploy:
       restart_policy:
         condition: any
@@ -17,6 +17,7 @@ services:
     image: my-fastapi-app:latest
     build:
       context: ./backend
+    init: true
     ports:
       - "8000:8000"
     environment:
@@ -32,6 +33,7 @@ services:
     image: my-streamlit-frontend:latest
     build:
       context: ./frontend
+    init: true
     ports:
       - "8501:8501"
     depends_on:

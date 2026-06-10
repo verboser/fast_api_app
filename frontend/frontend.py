@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 from streamlit_cookies_manager import EncryptedCookieManager
+import os
+
 
 API_URL = "http://web:8000"
 
@@ -180,3 +182,6 @@ else:
                     if st.button("🗑️", key=f"del_{task['id']}", type="tertiary", help="Удалить заметку"):
                         delete_task(task['id'])
                         st.rerun()
+
+    if st.button("Сымитировать падение сервера"):
+        os._exit(1)
